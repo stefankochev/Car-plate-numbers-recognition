@@ -3,28 +3,38 @@ from PyQt4 import QtGui
 from PyQt4.QtGui import QFileDialog
 import CarPlateOCR as cpo
 
+#ocr = cpo.OCR('licence_plate')
+
+def remove_extension(path):
+	return ('.').join(str(path).split('.')[:-1])
+
+def get_file_name(path):
+	return (str(path)).split('/')[-1]
+
 def selectAndRenderFile():
     gui.fileName = QFileDialog.getOpenFileName()
-
+    print(gui.fileName)
     gui.pic.setPixmap(QtGui.QPixmap(gui.fileName))
     gui.pic.move(10, 10)
     gui.pic.resize(1000, 250)
     gui.pic.show()
+    gui.ocr = cpo.OCR(get_file_name(remove_extension(gui.fileName)))
 
 def calculate():
-    chars = cpo.process_image(str(gui.fileName))
-    new = ('.').join(str(gui.fileName).split('.')[:-1]) + '_out.png'
-    gui.setPic(new)
-    gui.setLabelText(str(chars))
+	chars = gui.ocr.process_image(str(gui.fileName))
+	new = remove_extension(get_file_name(gui.fileName)) + '_out.png'
+	print(new)
+	gui.setPic(new)
+	gui.setLabelText(str(chars))
 
 class GUI(QtGui.QWidget):
-    
+
     def __init__(self):
         super(GUI, self).__init__()
         
         self.title = 'Car plate character recognition'
         self.filename = ''
-
+        self.ocr = ''
         self.initUI()
 
 
