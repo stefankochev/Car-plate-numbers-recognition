@@ -18,14 +18,23 @@ def selectAndRenderFile():
     gui.pic.move(10, 10)
     gui.pic.resize(1000, 250)
     gui.pic.show()
-    gui.ocr = cpo.OCR(get_file_name(remove_extension(gui.fileName)))
+    gui.ocr = cpo.OCR(get_file_name(remove_extension(gui.fileName)), gui)
+
+def displayNext():
+    try:
+        gui.setPic(gui.q[0])
+        gui.q = gui.q[1:]
+    except:
+        pass
 
 def calculate():
-	chars = gui.ocr.process_image(str(gui.fileName))
-	new = remove_extension(get_file_name(gui.fileName)) + '_out.png'
-	print(new)
-	gui.setPic(new)
-	gui.setLabelText(str(chars))
+    gui.q = []
+    chars = gui.ocr.process_image(str(gui.fileName))
+
+    if(not gui.check_box.checkState()):
+        new = 'output/' + remove_extension(get_file_name(gui.fileName)) + '_out.png'
+        gui.setPic(new)
+        gui.setLabelText(str(chars))
 
 class GUI(QtGui.QWidget):
 
@@ -35,6 +44,7 @@ class GUI(QtGui.QWidget):
         self.title = 'Car plate character recognition'
         self.filename = ''
         self.ocr = ''
+        self.q = []
         self.initUI()
 
 
@@ -57,6 +67,14 @@ class GUI(QtGui.QWidget):
         self.btn_file.resize(self.btn_file.sizeHint())
         self.btn_file.move(1100, 20)
         self.btn_file.clicked.connect(selectAndRenderFile)
+
+        self.btn_next = QtGui.QPushButton('Next', self)
+        self.btn_next.resize(self.btn_next.sizeHint())
+        self.btn_next.move(1025, 160)
+        self.btn_next.clicked.connect(displayNext)
+
+        self.check_box = QtGui.QCheckBox('Step by step', self)
+        self.check_box.move(1025, 140)
 
         self.label = QtGui.QLabel(self)
         self.label.move(1025, 100)

@@ -4,14 +4,16 @@ import sys
 import CarPlateOCR as cpo
 import OCRGraphics as og
 import os
+import knn
 
 
 
 class OCR:
 
-	def __init__(self, image_name):
+	def __init__(self, image_name, gui):
 		self.image_name = image_name
-		self.graphics = og.CarPlateGraphics(image_name)
+		self.graphics = og.CarPlateGraphics(image_name, gui)
+		self.gui = gui
 
 	def is_probably_character(self, w, h, col):
 	    area = w*h
@@ -23,13 +25,16 @@ class OCR:
 
 	def is_character_for_sure(self, bb, mean, median, meanW, meanH, medianW, medianH):
 		center, (x,y,w,h) = bb
+
 		if(abs(w*h - median) > 10000):
 			return False
-		if(abs(w - meanW) > 15 and abs(h - meanH) > 15):
+		
+		if(abs(w - meanW) > 13 and abs(h - meanH) > 13):
 			return False
-		print('meanH = ',meanH,' medianH = ',medianH,' h = ',h)
+		
 		if(abs(h - meanH) > 30):
 			return False
+		
 		return True
 
 
@@ -65,7 +70,7 @@ class OCR:
 			center = (x + w/2, y + h/2)
 			if self.is_probably_character(w, h, bounding_boxes):
 				x, y, w, h = x-4, y-4, w+8, h+8
-				bounding_boxes.append((center, (x,y,w,h))) #add filter after for loop and then second loop for creating rectangles
+				bounding_boxes.append((center, (x,y,w,h)))
 
 		mean, median, meanW, meanH, medianW, medianH = self.get_bb_mean_and_median(bounding_boxes)
 
@@ -79,8 +84,7 @@ class OCR:
 				255,
 				-1)
 
-
-		cv2.imwrite(self.image_name + '_mask_squares.png', char_mask)
+		self.graphics.saveImage(char_mask, 'mask_squares')
 
 		img_clean = cv2.bitwise_not(cv2.bitwise_and(char_mask, char_mask, mask = img_inverted))
 
@@ -112,22 +116,25 @@ class OCR:
 	def process_image(self, path):
 		if not os.path.exists("output"):
 			os.makedirs("output")
+
 		img = cv2.imread(path)
 		img = self.graphics.prepare_image_for_ocr(img)
 
 		clean_img, chars = self.get_all_characters(img)
 		output_img = self.highlight_characters(clean_img, chars)
-		cv2.imwrite('output/' + self.image_name + '_out.png', output_img)
+		self.graphics.saveImage(output_img, 'out')
 
-		samples = np.loadtxt('char_samples2.data',np.float32)
-		responses = np.loadtxt('char_responses2.data',np.float32)
+		samples = np.loadtxt('char_samples3.data',np.float32)
+		responses = np.loadtxt('char_responses3.data',np.float32)
 		responses = responses.reshape((responses.size,1))
 
-		model = cv2.ml.KNearest_create()
-		model.train(
-			samples, 
-			cv2.ml.ROW_SAMPLE, 
-			responses)
+		#model = cv2.ml.KNearest_create()
+		#model.train(
+		#	samples, 
+		#cv2.ml.ROW_SAMPLE, 
+		#	responses)
+
+		model2 = knn.Knn(samples, responses)
 
 		plate_chars = ""
 		for _, char_img in chars:
@@ -135,12 +142,13 @@ class OCR:
 				small_img = cv2.resize(char_img,(10,10))
 				small_img = small_img.reshape((1,100))
 				small_img = np.float32(small_img)
-				retval, results, neigh_resp, dists = model.findNearest(small_img, k = 1)
-				plate_chars += str(chr((results[0][0])))
+				#retval, results, neigh_resp, dists = model.findNearest(small_img, k = 3)
+				result = model2.find_nearest(small_img, k = 3)
+				plate_chars += str(chr(int(result)))
 
-			except:
-				print('A')
-			else:
-				print('B')
+			except ValueError as err:
+				print(err)
+
 		print("Licence plate: %s" % plate_chars)
+
 		return plate_chars

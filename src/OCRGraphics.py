@@ -5,8 +5,15 @@ import sys
 
 class CarPlateGraphics:
 
-	def __init__(self, name):
+	def __init__(self, name, gui):
 		self.image_name = name
+		self.gui = gui
+
+	def saveImage(self, image, name):
+		path = 'output/{}_{}.png'.format(self.image_name, name)
+		cv2.imwrite(path, image)
+		self.gui.q.append(path)
+
 
 
 	def gaussianBlur(self, image):
@@ -14,14 +21,15 @@ class CarPlateGraphics:
 	        image,
 	        (5,5),
 	        0)
-		cv2.imwrite('output/' + self.image_name + '_resized.png', image)
+
+		self.saveImage(image, 'resized')
 
 		return image
 
 
 	def equalize(self, image):
 		image = cv2.equalizeHist(image)
-		cv2.imwrite('output/' + self.image_name + '_equalized.png', image)
+		self.saveImage(image, 'equalized')
 
 		return image
 
@@ -31,7 +39,7 @@ class CarPlateGraphics:
 	        self.make_image_black(
 	            cv2.cvtColor(image, cv2.COLOR_GRAY2BGR), 8), 
 	            cv2.COLOR_BGR2GRAY)
-		cv2.imwrite('output/' + self.image_name + '_black.png', image)
+		self.saveImage(image, 'black')
 
 		return image
 
@@ -42,13 +50,14 @@ class CarPlateGraphics:
 			64, #64
 			255, 
 			cv2.THRESH_BINARY)
-		cv2.imwrite('output/' + self.image_name + '_mask.png', image)
+		self.saveImage(image, 'mask')
 
 		return image
 
 	def invert_bitwise(self, image):
 		image = cv2.bitwise_not(image)
-		cv2.imwrite('output/' + self.image_name + '_mask_inverted.png', image)
+
+		self.saveImage(image, 'mask_inverted')
 
 		return image
 
@@ -56,7 +65,8 @@ class CarPlateGraphics:
 	def erode(self, image):
 		kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 		image = cv2.erode(image, kernel, iterations = 1)
-		cv2.imwrite('output/' + self.image_name + '_mask_eroded.png', image)
+
+		self.saveImage(image, 'mask_eroded')
 
 		return image
 
